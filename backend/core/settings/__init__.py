@@ -1,0 +1,1 @@
+from .development import *  # Gebruik development settings by default
