@@ -46,11 +46,18 @@ class ShopwareClient:
     def make_request(self, method, endpoint, **kwargs):
         """Maak een API request met automatische token vernieuwing."""
         url = f"{self.base_url}/api/{endpoint.lstrip('/')}"
+
+        # Debug prints
+        print(f"Making request to: {url}")
+        print(f"Method: {method}")
+
         headers = {
             'Authorization': f'Bearer {self.get_access_token()}',
             'Accept': 'application/json',
             'Content-Type': 'application/json'
         }
+
+        print(f"Headers: {headers}")  # Debug print
 
         response = self.session.request(
             method=method,
@@ -58,6 +65,10 @@ class ShopwareClient:
             headers=headers,
             **kwargs
         )
+
+        print(f"Response status: {response.status_code}")  # Debug print
+        print(f"Response content: {response.text}")  # Debug print
+
         response.raise_for_status()
         return response.json()
 

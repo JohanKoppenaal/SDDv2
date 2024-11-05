@@ -1,76 +1,114 @@
-# apps/discounts/models.py
-
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 class DiscountRule(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
+    """Hoofdmodel voor kortingsregels"""
+    name = models.CharField(
+        max_length=255,
+        verbose_name="Naam",
+        help_text="Naam van de kortingsregel"
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name="Beschrijving",
+        help_text="Optionele beschrijving van de kortingsregel"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Actief",
+        help_text="Is deze kortingsregel momenteel actief?"
+    )
 
     # Timing
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField(null=True, blank=True)
+    start_date = models.DateTimeField(
+        verbose_name="Startdatum",
+        help_text="Wanneer gaat de korting in?"
+    )
+    end_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Einddatum",
+        help_text="Wanneer eindigt de korting? Leeg = geen einddatum"
+    )
 
-    # Discount configuration
+    # Korting configuratie
     discount_type = models.CharField(
         max_length=20,
         choices=[
             ('percentage', 'Percentage'),
-            ('fixed', 'Fixed Amount')
-        ]
+            ('fixed', 'Vast bedrag')
+        ],
+        verbose_name="Type korting"
     )
     discount_value = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        validators=[MinValueValidator(0)]
+        validators=[MinValueValidator(0)],
+        verbose_name="Kortingswaarde",
+        help_text="Percentage of vast bedrag van de korting"
     )
 
-    # Priority for overlapping rules
-    priority = models.IntegerField(default=0)
+    # Prioriteit voor overlappende regels
+    priority = models.IntegerField(
+        default=0,
+        verbose_name="Prioriteit",
+        help_text="Hogere waarde = hogere prioriteit bij overlappende regels"
+    )
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "Kortingsregel"
+        verbose_name_plural = "Kortingsregels"
         ordering = ['-priority', '-created_at']
 
     def __str__(self):
         return self.name
 
 class DiscountCondition(models.Model):
+    """Model voor de voorwaarden van een kortingsregel"""
     discount_rule = models.ForeignKey(
         DiscountRule,
         on_delete=models.CASCADE,
-        related_name='conditions'
+        related_name='conditions',
+        verbose_name="Kortingsregel"
     )
 
     condition_type = models.CharField(
         max_length=20,
         choices=[
-            ('manufacturer', 'Manufacturer'),
-            ('category', 'Category'),
+            ('manufacturer', 'Fabrikant'),
+            ('category', 'Categorie'),
             ('tag', 'Tag'),
-            ('property', 'Property'),
-            ('price', 'Price Range')
-        ]
+            ('property', 'Eigenschap'),
+            ('price', 'Prijsbereik')
+        ],
+        verbose_name="Type voorwaarde"
     )
 
-    # For storing condition values (e.g., category IDs, price ranges, etc.)
-    value = models.JSONField()
+    # Voor het opslaan van voorwaarde waarden (bijv. category IDs, prijsbereiken)
+    value = models.JSONField(
+        verbose_name="Waarde",
+        help_text="JSON waarde voor de voorwaarde"
+    )
 
-    # Logical operators for combining conditions
     operator = models.CharField(
         max_length=3,
         choices=[
-            ('AND', 'AND'),
-            ('OR', 'OR')
+            ('AND', 'EN'),
+            ('OR', 'OF')
         ],
-        default='AND'
+        default='AND',
+        verbose_name="Operator"
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        verbose_name = "Kortingsvoorwaarde"
+        verbose_name_plural = "Kortingsvoorwaarden"
+
     def __str__(self):
-        return f"{self.condition_type} condition for {self.discount_rule.name}"
+        return f"{self.get_condition_type_display()} voorwaarde voor {self.discount_rule.name}"
